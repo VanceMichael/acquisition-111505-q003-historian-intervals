@@ -1,0 +1,8 @@
+{
+  "point": "store-temperature",
+  "sourceTime": "2026-11-01T00:00:00Z",
+  "revision": 1,
+  "value": 21.4,
+  "quality": "good",
+  "kind": "raw"
+}

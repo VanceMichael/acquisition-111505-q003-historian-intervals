@@ -1,0 +1,14 @@
+{
+  "name": "设备历史库的区间边界与修订读数采集",
+  "probe": "/history/read",
+  "identityFields": [
+    "point",
+    "sourceTime",
+    "revision"
+  ],
+  "probeBody": {
+    "point": "store-temperature",
+    "start": "2026-11-01T00:00:00Z",
+    "end": "2026-11-01T00:03:00Z"
+  }
+}
