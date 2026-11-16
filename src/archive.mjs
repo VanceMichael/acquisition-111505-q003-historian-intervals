@@ -22,8 +22,23 @@ export class Archive {
     try { await rename(temporary, path); }
     catch (error) { await unlink(temporary).catch(() => {}); throw error; }
   }
+  // 在同一把版本写锁内串行执行变更，避免多个采集任务互相覆盖归档文件。
+  locked(operation) {
+    const result = this.tail.then(operation);
+    this.tail = result.catch(() => {});
+    return result;
+  }
+  // 仅保存原始字节并返回摘要，不产生业务收件版本。
+  async storeBlob(raw) {
+    return this.locked(async () => {
+      const bytes = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+      const sha256 = digest(bytes);
+      await this.atomic(join(this.directory, 'blobs', sha256), bytes);
+      return sha256;
+    });
+  }
   async accept(source, identity, data, raw) {
-    const operation = async () => {
+    return this.locked(async () => {
       const bytes = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
       const sha256 = digest(bytes);
       await this.atomic(join(this.directory, 'blobs', sha256), bytes);
@@ -39,10 +54,7 @@ export class Archive {
       previous.versions.push({ version, sha256, data, receivedAt: new Date().toISOString() });
       await this.atomic(path, Buffer.from(JSON.stringify(previous)));
       return { receipt: key, version, duplicate: false, sha256 };
-    };
-    const result = this.tail.then(operation);
-    this.tail = result.catch(() => {});
-    return result;
+    });
   }
   async list() {
     await this.tail;
