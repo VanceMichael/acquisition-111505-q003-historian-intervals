@@ -17,7 +17,22 @@ try {
   console.log(JSON.stringify({ 来源状态: observed.status, 原始字节: raw.length, 来源类型: observed.headers.get('content-type') }));
   const accepted = await fetch(base + '/api/manual', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(sample) });
   console.log(JSON.stringify({ 人工收件: await accepted.json() }));
-  const pending = await fetch(base + '/api/collect', { method: 'POST' });
-  console.log(JSON.stringify({ 自动接入状态: pending.status, 说明: await pending.json() }));
-  console.log(JSON.stringify({ 已存记录: await (await fetch(base + '/api/records')).json() }));
+  const collected = await fetch(base + '/api/collect', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ source, ...project.probeBody })
+  });
+  const result = await collected.json();
+  console.log(JSON.stringify({
+    区间领取: collected.status,
+    请求区间: result.requested,
+    读完: result.complete,
+    分页数: result.pages,
+    原始观测: result.observations.map(item => [item.sourceTime, item.revision, item.quality]),
+    绘图端点: result.artifacts.map(item => [item.sourceTime, item.kind, item.measurement])
+  }));
+  const report = await fetch(base + '/api/acquisition?' + new URLSearchParams({ ...project.probeBody, origin: source }));
+  const state = await report.json();
+  console.log(JSON.stringify({ 领取报告: { 已读完: state.readComplete, 缺口: state.gaps, 汇总: state.summary } }));
+  console.log(JSON.stringify({ 已存人工记录: await (await fetch(base + '/api/records')).json() }));
 } finally { intake.closeAllConnections(); provider.closeAllConnections(); await Promise.all([new Promise(resolve => intake.close(resolve)), new Promise(resolve => provider.close(resolve))]); await rm(directory, { recursive: true, force: true }); }

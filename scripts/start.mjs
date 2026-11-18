@@ -1,6 +1,8 @@
 import { createIntake } from '../src/server.mjs';
 import { createProvider } from '../provider/server.mjs';
-const intake = await createIntake(process.env.ARCHIVE_DIR || '.local/archive');
+const intake = await createIntake(process.env.ARCHIVE_DIR || '.local/archive', {
+  source: process.env.SOURCE_URL || `http://127.0.0.1:${process.env.SOURCE_PORT || 4200}`
+});
 const provider = createProvider();
 await Promise.all([
   new Promise(resolve => intake.listen(Number(process.env.PORT || 3200), '0.0.0.0', resolve)),

@@ -44,10 +44,11 @@ export class Archive {
     this.tail = result.catch(() => {});
     return result;
   }
-  async list() {
+  async list(source) {
     await this.tail;
     const names = (await readdir(join(this.directory, 'receipts'))).filter(name => name.endsWith('.json')).sort();
-    return Promise.all(names.map(async name => JSON.parse(await readFile(join(this.directory, 'receipts', name), 'utf8'))));
+    const records = await Promise.all(names.map(async name => JSON.parse(await readFile(join(this.directory, 'receipts', name), 'utf8'))));
+    return source === undefined ? records : records.filter(record => record.source === source);
   }
   async bytes(sha256) {
     if (!/^[0-9a-f]{64}$/.test(sha256)) throw new Error('摘要格式无效');
